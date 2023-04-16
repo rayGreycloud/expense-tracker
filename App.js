@@ -7,9 +7,10 @@ import { Ionicons } from '@expo/vector-icons';
 import ManageExpense from './screens/ManageExpense';
 import RecentExpenses from './screens/RecentExpenses';
 import AllExpenses from './screens/AllExpenses';
-import IconButton from './components/ExpensesOutput/UI/IconButton';
+import IconButton from './components/UI/IconButton';
 
 import { GlobalStyles } from './constants/styles';
+import ExpensesProvider from './store/expenses-context';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -66,31 +67,33 @@ const ExpensesOverview = () => (
 export default function App() {
   return (
     <>
-      <StatusBar style='light' />
-      <NavigationContainer>
-        <Stack.Navigator
-          screenOptions={{
-            headerStyle: { backgroundColor: GlobalStyles.colors.primary500 },
-            headerTintColor: '#fff'
-          }}
-        >
-          <Stack.Screen
-            name='ExpensesOverview'
-            component={ExpensesOverview}
-            options={{
-              headerShown: false
+      <ExpensesProvider>
+        <StatusBar style='light' />
+        <NavigationContainer>
+          <Stack.Navigator
+            screenOptions={{
+              headerStyle: { backgroundColor: GlobalStyles.colors.primary500 },
+              headerTintColor: '#fff'
             }}
-          />
-          <Stack.Screen
-            name='ManageExpense'
-            component={ManageExpense}
-            options={{
-              presentation: 'modal', // mostly effects iOS
-              title: 'Add Expense'
-            }}
-          />
-        </Stack.Navigator>
-      </NavigationContainer>
+          >
+            <Stack.Screen
+              name='ExpensesOverview'
+              component={ExpensesOverview}
+              options={{
+                headerShown: false
+              }}
+            />
+            <Stack.Screen
+              name='ManageExpense'
+              component={ManageExpense}
+              options={{
+                presentation: 'modal', // mostly effects iOS
+                title: 'Add Expense'
+              }}
+            />
+          </Stack.Navigator>
+        </NavigationContainer>
+      </ExpensesProvider>
     </>
   );
 }
