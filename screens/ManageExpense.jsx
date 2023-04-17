@@ -1,23 +1,25 @@
-import { useContext, useLayoutEffect } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { useContext, useLayoutEffect, useState } from 'react';
+import { StyleSheet, View } from 'react-native';
 
 import ExpenseForm from '../components/ManageExpense/ExpenseForm';
-import Button from '../components/UI/Button';
 import IconButton from '../components/UI/IconButton';
+import LoadingOverlay from '../components/UI/LoadingOverlay';
 
 import { GlobalStyles } from '../constants/styles';
 import { ExpensesContext } from '../store/expenses-context';
+import { deleteExpense, storeExpense, updateExpense } from '../utils/http';
 
 const ManageExpense = ({ route, navigation }) => {
+  const [isLoading, setIsLoading] = useState(false);
+
   const expensesCtx = useContext(ExpensesContext);
   const targetExpenseId = route.params?.expenseId;
-  console.log('targetExpenseId: ', targetExpenseId);
+
   const isEditing = !!targetExpenseId;
-  console.log('isEditing: ', isEditing);
+
   const targetExpense = isEditing
     ? expensesCtx.getExpense(targetExpenseId)
     : null;
-  console.log('targetExpense: ', targetExpense);
 
   useLayoutEffect(() => {
     navigation.setOptions({
@@ -25,27 +27,41 @@ const ManageExpense = ({ route, navigation }) => {
     });
   }, [navigation, isEditing]);
 
-  const onDeleteHandler = () => {
-    console.log('delete');
+  const onDeleteHandler = async () => {
+    setIsLoading(true);
+
+    await deleteExpense(targetExpenseId);
     expensesCtx.deleteExpense(targetExpenseId);
+
+    setIsLoading(false);
     navigation.goBack();
   };
   const onCancelHandler = () => {
-    console.log('cancel');
     navigation.goBack();
   };
 
-  const onSaveHandler = (data) => {
-    console.log('save');
-    console.log('data: ', data);
+  const onSaveHandler = async (expenseData) => {
+    setIsLoading(true);
+
     if (isEditing) {
-      expensesCtx.updateExpense(targetExpenseId, data);
+      await updateExpense(targetExpenseId, expenseData);
+      expensesCtx.updateExpense(targetExpenseId, expenseData);
+
+      setIsLoading(false);
     } else {
-      expensesCtx.addExpense(data);
+      const expenseId = await storeExpense(expenseData);
+      expensesCtx.addExpense({
+        id: expenseId,
+        ...expenseData
+      });
+
+      setIsLoading(false);
     }
 
     navigation.goBack();
   };
+
+  if (isLoading) return <LoadingOverlay />;
 
   return (
     <View style={styles.rootContainer}>
