@@ -1,12 +1,10 @@
-import { createContext, useReducer, useState } from 'react';
-
-import { DUMMY_EXPENSES } from '../constants/dummy-expenses-data';
-console.log('DUMMY_EXPENSES: ', DUMMY_EXPENSES);
+import { createContext, useReducer } from 'react';
 
 export const ExpensesContext = createContext({
   expenses: [],
   getExpense: (id) => {},
   addExpense: ({ description, amount, date }) => {},
+  setExpenses: (expenses) => {},
   updateExpense: (id, { description, amount, date }) => {},
   deleteExpense: (id) => {}
 });
@@ -14,8 +12,11 @@ export const ExpensesContext = createContext({
 function expensesReducer(state, action) {
   switch (action.type) {
     case 'ADD':
-      const id = Date.parse(new Date().toString()) + Math.random().toString();
-      return [{ ...action.payload, id }, ...state];
+      return [action.payload, ...state];
+
+    case 'SET':
+      return action.payload.reverse();
+
     case 'UPDATE':
       const targetExpenseIndex = state.findIndex(
         (expense) => expense.id === action.payload.id
@@ -27,15 +28,17 @@ function expensesReducer(state, action) {
       const updatedExpenses = [...state];
       updatedExpenses[targetExpenseIndex] = updatedExpense;
       return updatedExpenses;
+
     case 'DELETE':
       return state.filter((expense) => expense.id !== action.payload);
+
     default:
       return state;
   }
 }
 
 const ExpensesProvider = ({ children }) => {
-  const [expenses, dispatch] = useReducer(expensesReducer, DUMMY_EXPENSES);
+  const [expenses, dispatch] = useReducer(expensesReducer, []);
 
   const getExpense = (id) => {
     return expenses.find((expense) => expense.id === id);
@@ -43,6 +46,10 @@ const ExpensesProvider = ({ children }) => {
 
   const addExpense = (data) => {
     dispatch({ type: 'ADD', payload: data });
+  };
+
+  const setExpenses = (data) => {
+    dispatch({ type: 'SET', payload: data });
   };
 
   const updateExpense = (id, data) => {
@@ -57,6 +64,7 @@ const ExpensesProvider = ({ children }) => {
     expenses,
     getExpense,
     addExpense,
+    setExpenses,
     updateExpense,
     deleteExpense
   };
