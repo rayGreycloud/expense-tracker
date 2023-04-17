@@ -1,6 +1,7 @@
 import { useContext, useLayoutEffect } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
+import ExpenseForm from '../components/ManageExpense/ExpenseForm';
 import Button from '../components/UI/Button';
 import IconButton from '../components/UI/IconButton';
 
@@ -13,8 +14,10 @@ const ManageExpense = ({ route, navigation }) => {
   console.log('targetExpenseId: ', targetExpenseId);
   const isEditing = !!targetExpenseId;
   console.log('isEditing: ', isEditing);
-  const data = isEditing ? expensesCtx.getExpense(targetExpenseId) : null;
-  console.log('data: ', data);
+  const targetExpense = isEditing
+    ? expensesCtx.getExpense(targetExpenseId)
+    : null;
+  console.log('targetExpense: ', targetExpense);
 
   useLayoutEffect(() => {
     navigation.setOptions({
@@ -32,19 +35,13 @@ const ManageExpense = ({ route, navigation }) => {
     navigation.goBack();
   };
 
-  const newExpense = {
-    description: 'Samsung TV',
-    amount: 699.99,
-    date: new Date(2023, 1, 4)
-  };
-
-  const onSaveHandler = () => {
+  const onSaveHandler = (data) => {
     console.log('save');
+    console.log('data: ', data);
     if (isEditing) {
-      const data = { ...data, description: 'New Description' };
       expensesCtx.updateExpense(targetExpenseId, data);
     } else {
-      expensesCtx.addExpense(newExpense);
+      expensesCtx.addExpense(data);
     }
 
     navigation.goBack();
@@ -52,28 +49,22 @@ const ManageExpense = ({ route, navigation }) => {
 
   return (
     <View style={styles.rootContainer}>
-      <View style={styles.buttonContainer}>
-        <Button mode='flat' onPress={onCancelHandler} style={styles.button}>
-          Cancel
-        </Button>
-        <Button onPress={onSaveHandler} style={styles.button}>
-          {isEditing ? 'Update' : 'Add'}{' '}
-        </Button>
-      </View>
+      <ExpenseForm
+        onCancel={onCancelHandler}
+        onSubmit={onSaveHandler}
+        submitButtonLabel={isEditing ? 'Update' : 'Add'}
+        initialValues={targetExpense}
+      />
+
       {isEditing && (
-        <>
-          <View>
-            <Text style={styles.text}>{JSON.stringify(data, null, 2)}</Text>
-          </View>
-          <View style={styles.deleteContainer}>
-            <IconButton
-              icon='trash'
-              color={GlobalStyles.colors.error500}
-              size={36}
-              onPress={onDeleteHandler}
-            />
-          </View>
-        </>
+        <View style={styles.deleteContainer}>
+          <IconButton
+            icon='trash'
+            color={GlobalStyles.colors.error500}
+            size={36}
+            onPress={onDeleteHandler}
+          />
+        </View>
       )}
     </View>
   );
