@@ -3,26 +3,38 @@ import { StyleSheet, View } from 'react-native';
 
 import ExpensesOutput from '../components/ExpensesOutput/ExpensesOutput';
 import LoadingOverlay from '../components/UI/LoadingOverlay';
+import ErrorOverlay from '../components/UI/ErrorOverlay';
 
 import { ExpensesContext } from '../store/expenses-context';
 import { fetchExpenses } from '../utils/http';
 
 const AllExpenses = () => {
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
+
   const expensesCtx = useContext(ExpensesContext);
 
   useEffect(() => {
     async function getExpenses() {
-      setIsLoading(true);
-      const expenses = await fetchExpenses();
-      expensesCtx.setExpenses(expenses);
-      setIsLoading(false);
+      try {
+        setIsLoading(true);
+        const expenses = await fetchExpenses();
+        expensesCtx.setExpenses(expenses);
+      } catch (error) {
+        setError('Error fetching expenses!');
+      } finally {
+        setIsLoading(false);
+      }
     }
 
     getExpenses();
   }, []);
 
+  const onConfirmHandler = () => setError(null);
+
   if (isLoading) return <LoadingOverlay />;
+  if (error && !isLoading)
+    return <ErrorOverlay message={error} onConfirm={onConfirmHandler} />;
 
   return (
     <View style={styles.container}>
