@@ -1,13 +1,28 @@
-import { useContext } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { useContext, useEffect, useState } from 'react';
+import { StyleSheet, View } from 'react-native';
 
 import ExpensesOutput from '../components/ExpensesOutput/ExpensesOutput';
+import LoadingOverlay from '../components/UI/LoadingOverlay';
 
 import { ExpensesContext } from '../store/expenses-context';
+import { fetchExpenses } from '../utils/http';
 
 const AllExpenses = () => {
+  const [isLoading, setIsLoading] = useState(true);
   const expensesCtx = useContext(ExpensesContext);
-  console.log('all/expenses: ', expensesCtx.expenses);
+
+  useEffect(() => {
+    async function getExpenses() {
+      setIsLoading(true);
+      const expenses = await fetchExpenses();
+      expensesCtx.setExpenses(expenses);
+      setIsLoading(false);
+    }
+
+    getExpenses();
+  }, []);
+
+  if (isLoading) return <LoadingOverlay />;
 
   return (
     <View style={styles.container}>
