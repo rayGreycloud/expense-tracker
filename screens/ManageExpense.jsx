@@ -1,20 +1,28 @@
-import { useContext, useLayoutEffect } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { useContext, useLayoutEffect, useState } from 'react';
+import { StyleSheet, View } from 'react-native';
 
-import Button from '../components/UI/Button';
+import ExpenseForm from '../components/ManageExpense/ExpenseForm';
 import IconButton from '../components/UI/IconButton';
+import LoadingOverlay from '../components/UI/LoadingOverlay';
+import ErrorOverlay from '../components/UI/ErrorOverlay';
 
 import { GlobalStyles } from '../constants/styles';
 import { ExpensesContext } from '../store/expenses-context';
+import { deleteExpense, storeExpense, updateExpense } from '../utils/http';
 
 const ManageExpense = ({ route, navigation }) => {
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState(null);
+  console.log('error', error);
+
   const expensesCtx = useContext(ExpensesContext);
   const targetExpenseId = route.params?.expenseId;
-  console.log('targetExpenseId: ', targetExpenseId);
+
   const isEditing = !!targetExpenseId;
-  console.log('isEditing: ', isEditing);
-  const data = isEditing ? expensesCtx.getExpense(targetExpenseId) : null;
-  console.log('data: ', data);
+
+  const targetExpense = isEditing
+    ? expensesCtx.getExpense(targetExpenseId)
+    : null;
 
   useLayoutEffect(() => {
     navigation.setOptions({
@@ -22,58 +30,73 @@ const ManageExpense = ({ route, navigation }) => {
     });
   }, [navigation, isEditing]);
 
-  const onDeleteHandler = () => {
-    console.log('delete');
-    expensesCtx.deleteExpense(targetExpenseId);
-    navigation.goBack();
-  };
-  const onCancelHandler = () => {
-    console.log('cancel');
-    navigation.goBack();
-  };
+  const onDeleteHandler = async () => {
+    try {
+      setIsLoading(true);
 
-  const newExpense = {
-    description: 'Samsung TV',
-    amount: 699.99,
-    date: new Date(2023, 1, 4)
-  };
+      await deleteExpense(targetExpenseId);
+      expensesCtx.deleteExpense(targetExpenseId);
 
-  const onSaveHandler = () => {
-    console.log('save');
-    if (isEditing) {
-      const data = { ...data, description: 'New Description' };
-      expensesCtx.updateExpense(targetExpenseId, data);
-    } else {
-      expensesCtx.addExpense(newExpense);
+      navigation.goBack();
+    } catch (error) {
+      // N.B. this doesn't work because no error is thrown if base url is correct
+      setError('Error deleting expense!');
+    } finally {
+      setIsLoading(false);
     }
+  };
 
+  const onCancelHandler = () => {
     navigation.goBack();
   };
+
+  const onSaveHandler = async (expenseData) => {
+    try {
+      setIsLoading(true);
+
+      if (isEditing) {
+        await updateExpense(targetExpenseId, expenseData);
+        expensesCtx.updateExpense(targetExpenseId, expenseData);
+      } else {
+        const expenseId = await storeExpense(expenseData);
+        expensesCtx.addExpense({
+          id: expenseId,
+          ...expenseData
+        });
+      }
+
+      navigation.goBack();
+    } catch (error) {
+      setError('Error saving expense!');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const onConfirmHandler = () => setError(null);
+
+  if (isLoading) return <LoadingOverlay />;
+  if (error && !isLoading)
+    return <ErrorOverlay message={error} onConfirm={onConfirmHandler} />;
 
   return (
     <View style={styles.rootContainer}>
-      <View style={styles.buttonContainer}>
-        <Button mode='flat' onPress={onCancelHandler} style={styles.button}>
-          Cancel
-        </Button>
-        <Button onPress={onSaveHandler} style={styles.button}>
-          {isEditing ? 'Update' : 'Add'}{' '}
-        </Button>
-      </View>
+      <ExpenseForm
+        onCancel={onCancelHandler}
+        onSubmit={onSaveHandler}
+        submitButtonLabel={isEditing ? 'Update' : 'Add'}
+        initialValues={targetExpense}
+      />
+
       {isEditing && (
-        <>
-          <View>
-            <Text style={styles.text}>{JSON.stringify(data, null, 2)}</Text>
-          </View>
-          <View style={styles.deleteContainer}>
-            <IconButton
-              icon='trash'
-              color={GlobalStyles.colors.error500}
-              size={36}
-              onPress={onDeleteHandler}
-            />
-          </View>
-        </>
+        <View style={styles.deleteContainer}>
+          <IconButton
+            icon='trash'
+            color={GlobalStyles.colors.error500}
+            size={36}
+            onPress={onDeleteHandler}
+          />
+        </View>
       )}
     </View>
   );
