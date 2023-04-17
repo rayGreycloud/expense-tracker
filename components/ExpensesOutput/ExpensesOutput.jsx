@@ -6,7 +6,6 @@ import ExpensesSummary from './ExpensesSummary';
 import { GlobalStyles } from '../../constants/styles';
 
 const ExpensesOutput = ({ expenses, expensesPeriod, fallbackText }) => {
-  console.log('output/expenses: ', expenses);
   let content = <Text style={styles.infoText}>{fallbackText}</Text>;
 
   if (expenses.length > 0) {
